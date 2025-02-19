@@ -1,0 +1,116 @@
+#include <DHT.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define DHTPIN 25
+#define DHTTYPE DHT11
+
+DHT dht(DHTPIN, DHTTYPE);
+
+const byte dvpPin = 33;
+const int motorPin1 = 34; 
+const int motorPin2 = 35; 
+const int enablePin = 32; 
+const byte FOTO_SENSOR_PIN1 = 27; 
+const byte FOTO_SENSOR_PIN2 = 26;
+const byte floatSensorPin = 28; 
+const int lampPin = 29; 
+
+const unsigned long motorOnTime = 3000;
+const unsigned long readingInterval = 5000;
+const unsigned long sensorCheckInterval = 600000; 
+const unsigned long motorCooldown = 1800000; 
+
+unsigned long previousMillis = 0;
+unsigned long lastSensorCheck = 0;
+unsigned long lastMotorActivation = 0;
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+void setup() { 
+  Serial.begin(9600); 
+
+  pinMode(FOTO_SENSOR_PIN1, INPUT);
+  pinMode(FOTO_SENSOR_PIN2, INPUT);
+  pinMode(dvpPin, INPUT); 
+  pinMode(motorPin1, OUTPUT); 
+  pinMode(motorPin2, OUTPUT); 
+  pinMode(enablePin, OUTPUT); 
+  pinMode(floatSensorPin, INPUT); 
+  pinMode(lampPin, OUTPUT); 
+
+  digitalWrite(enablePin, HIGH);
+  
+  dht.begin();
+  display.begin(SSD1306_I2C_ADDRESS, 0x3C);
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.display();
+} 
+
+void loop() { 
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= readingInterval) {
+    previousMillis = currentMillis;
+
+    if (currentMillis - lastSensorCheck >= sensorCheckInterval) {
+      lastSensorCheck = currentMillis;
+      readSensors();
+    }
+
+    if (analogRead(dvpPin) > 2955 && (currentMillis - lastMotorActivation >= motorCooldown)) {
+      activateMotor();
+      lastMotorActivation = currentMillis;
+    }
+
+    if (digitalRead(floatSensorPin) == LOW) {
+      digitalWrite(lampPin, HIGH);
+    } else {
+      digitalWrite(lampPin, LOW);
+    }
+  }
+}
+
+void readSensors() {
+  int dvpValue = analogRead(dvpPin); 
+  int rUF = analogRead(FOTO_SENSOR_PIN1);
+  int rlight = analogRead(FOTO_SENSOR_PIN2);
+  float rwet = dht.readHumidity();
+  float t = dht.readTemperature();
+  
+  display.clearDisplay();
+  
+  display.setCursor(0, 0);
+  display.print("DVP: ");
+  display.print(dvpValue);
+  display.setCursor(0, 10);
+  display.print("UF: ");
+  display.print(rUF);
+  display.setCursor(0, 20);
+  display.print("Light: ");
+  display.print(rlight);
+  display.setCursor(0, 30);
+  display.print("Wet: ");
+  display.print(rwet);
+  display.print("%");
+  display.setCursor(0, 40);
+  display.print("T: ");
+  display.print(t);
+  display.print("C");
+  
+  display.display();
+}
+
+void activateMotor() {
+  Serial.println("Motor activated.");
+  digitalWrite(motorPin1, HIGH); 
+  digitalWrite(motorPin2, LOW); 
+  delay(motorOnTime);
+  digitalWrite(motorPin1, LOW); 
+  digitalWrite(motorPin2, LOW); 
+}
