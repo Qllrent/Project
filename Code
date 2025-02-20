@@ -9,9 +9,9 @@
 DHT dht(DHTPIN, DHTTYPE);
 
 const byte dvpPin = 33;
-const int motorPin1 = 34; 
-const int motorPin2 = 35; 
-const int enablePin = 32; 
+const int motorPin1 = 23; 
+const int motorPin2 = 22; 
+const int enablePin = 21; 
 const byte FOTO_SENSOR_PIN1 = 27; 
 const byte FOTO_SENSOR_PIN2 = 26;
 const byte floatSensorPin = 28; 
